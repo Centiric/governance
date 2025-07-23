@@ -10,3 +10,7 @@
 +   // TODO: Implement routing logic
 + }
 - **Dosya**: signal/handlers/invite.go
+## [Core] İlk Görev
+- **Dosya**: core/main.go
+- **Atanan**: @dev1
+- **Durum**: 🔄

@@ -10,61 +10,81 @@ Aşağıdaki diyagram, servislerin katmanlı yapısını ve aralarındaki temel 
 
 ```mermaid
 graph TD
-    subgraph " "
-        direction LR
-        subgraph "<b>Dış Dünya</b>"
-            direction TB
-            A[("📞<br>PSTN Ağı")]
-            B[("💻<br>Kullanıcı Arayüzü")]
-            C[("🔌<br>Harici API")]
-        end
-
-        subgraph "<b>Centiric Platformu</b>"
-            direction LR
-            subgraph "🛡️<br><b>Kenar Katmanı</b>"
-                direction TB
-                E["<b>signal</b><br><small>Rust<br><i>SIP/RTP Sunucusu</i></small>"]
-                D["<b>telecom</b><br><small>C++<br><i>PSTN Gateway</i></small>"]
-                F["<b>bridge</b><br><small>Node.js<br><i>API Gateway</i></small>"]
-            end
-            
-            subgraph "🧠<br><b>Çekirdek Katman</b>"
-                direction TB
-                G(((<b>core</b><br><small>Go<br><i>İş Mantığı Motoru</i></small>)))
-            end
-
-            subgraph "🎙️<br><b>Medya Katmanı</b>"
-                direction TB
-                H["<b>media</b><br><small>Python<br><i>Ses İşleme & WebRTC</i></small>"]
-                I["<b>ai</b><br><small>Python<br><i>Yapay Zeka Analitiği</i></small>"]
-            end
-        end
-    end
-
-    %% --- Veri Akışları & Protokoller ---
-    A -- "1. Fiziksel Sinyal" --> D
-    D -- "2. SIP (UDP:5060)" --> E
-    E -- "3. gRPC İsteği" --> G
-    G -- "4. Yönlendirme Kararı" --> E
-
-    B -- "HTTPS/WebSocket" --> G
-    C -- "REST/GraphQL" --> F
-    F -- "gRPC İsteği" --> G
-
-    E -- "6. Medya Bilgisi (SDP)" --> H
-    G -- "5. Medya Oturumu Aç" --> H
-    D -- "7. RTP (Ses Akışı)" --> H
-    H -- "8. Ses Kopyası" --> I
-    I -- "9. Analiz Verisi" --> G
+    %% ===== STİL TANIMLARI =====
+    classDef external fill:#f8f9fa,stroke:#6c757d,stroke-dasharray:5,5;
+    classDef edge fill:#e7f5ff,stroke:#228be6;
+    classDef core fill:#ebfbee,stroke:#40c057,stroke-width:2px;
+    classDef media fill:#fff4e6,stroke:#fd7e14;
+    classDef ai fill:#ffebee,stroke:#e53935;
+    classDef console fill:#e3f2fd,stroke:#1e88e5;
     
-    %% --- Stil Tanımları ---
-    classDef default fill:#fff,stroke:#555,stroke-width:2px,font-family:Arial,font-size:12px
-    classDef edge fill:#e3f2fd,stroke:#1e88e5
-    classDef core fill:#e8f5e9,stroke:#388e3c,stroke-width:3px
-    classDef media fill:#fff3e0,stroke:#f57c00
-    classDef external fill:#f5f5f5,stroke:#8d8d8d,stroke-dasharray: 5 5
+    %% ===== DIŞ SİSTEMLER =====
+    PSTN["PSTN Ağı\n(FXO/ISDN Sinyalleri)"]
+    Kullanici["Kullanıcı Arayüzü\n(Web Tarayıcısı)"]
+    HariciAPI["Harici API\n(CRM/ERP Sistemleri)"]
+    
+    %% ===== KENAR KATMANI =====
+    telecom["telecom\nC++ PSTN Gateway\n• FXO/ISDN → SIP/RTP\n• Sinyal dönüşümü"]
+    signal["signal\nRust SIP/RTP Sunucusu\n• 5060 UDP dinler\n• SIP parsing\n• gRPC entegrasyonu"]
+    bridge["bridge\nNode.js API Gateway\n• REST/GraphQL API\n• OAuth2 yetkilendirme\n• gRPC çevirimi"]
+    
+    %% ===== ÇEKİRDEK KATMAN =====
+    core["core\nGo Merkezi Motor\n• İş mantığı yürütme\n• Veritabanı işlemleri\n• Faturalandırma\n• Yönlendirme kararları"]
+    
+    %% ===== MEDYA & AI KATMANI =====
+    media["media\nPython/C Ses İşleme\n• RTP (10000-20000 UDP)\n• Ses kaydı & transcoding\n• WebRTC köprüleme"]
+    ai["ai\nPython Analitik\n• Speech-to-Text\n• Duygu analizi\n• Anahtar kelime tespiti"]
+    
+    %% ===== YÖNETİM ARAYÜZÜ =====
+    console["console\nReact+TS Yönetim Paneli\n• Gerçek zamanlı izleme\n• Yapılandırma arayüzü\n• WebSocket entegrasyonu"]
+    
+    %% ===== NUMARALANDIRILMIŞ AKIŞLAR =====
+    PSTN -- "1. Fiziksel Sinyal" --> telecom
+    telecom -- "2. SIP Mesajı\nINVITE, 5060 UDP" --> signal
+    signal -- "3. gRPC İsteği\nCallRequest, 50051 TCP" --> core
+    core -- "4. Yönlendirme Kararı" --> signal
+    core -- "5. Medya Oturumu Aç" --> media
+    media -- "6. Port Bilgisi" --> core
+    core -- "7. SDP Bilgisi" --> signal
+    signal -- "8. 200 OK + SDP" --> telecom
+    telecom -- "9. RTP Ses Akışı\n10000-20000 UDP" --> media
+    media -- "10. Ses Kopyası" --> ai
+    ai -- "11. Analiz Sonuçları" --> core
+    Kullanici -- "12. HTTPS/WebSocket\n443/80 TCP" --> console
+    console -- "13. WebSocket\nGerçek Zamanlı Veri" --> core
+    HariciAPI -- "14. REST API\n8443 TCP" --> bridge
+    bridge -- "15. gRPC\n50051 TCP" --> core
+    
+    %% ===== STİL ATAMALARI =====
+    class PSTN,Kullanici,HariciAPI external
+    class telecom,signal,bridge edge
+    class core core
+    class media,ai media
+    class ai ai
+    class console console
+```
 
-    class A,B,C external
-    class D,E,F edge
-    class G core
-    class H,I media
+
+---
+Basit gösterim
+```mermaid
+graph TD
+    PSTN["PSTN Ağı"] --> telecom
+    telecom -->|SIP| signal
+    signal -->|gRPC| core
+    core -->|Yönlendirme| signal
+    core -->|Medya Komut| media
+    media -->|Port Bilgisi| core
+    core -->|SDP| signal
+    signal -->|SIP Cevabı| telecom
+    telecom -->|RTP| media
+    media -->|Ses Kopyası| ai
+    ai -->|Analiz| core
+    Kullanici["Kullanıcı Arayüzü"] --> console
+    console -->|WebSocket| core
+    HariciAPI["Harici API"] --> bridge
+    bridge -->|gRPC| core
+    
+    classDef external fill:#f5f5f5,stroke:#666
+    class PSTN,Kullanici,HariciAPI external
+```

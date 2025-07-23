@@ -4,3 +4,4 @@
   - [ ] Yönlendirme kuralları (core#18)
 - [ ] Signal: SIP Stack (#2)
   - [ ] INVITE handler (signal#5)
+- [ ] **media**: G.711 codec desteği (@dev3)

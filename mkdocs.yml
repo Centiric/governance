@@ -1,0 +1,9 @@
+# mkdocs.yml
+site_name: Centiric Governance
+nav:
+  - Ana Sayfa: docs/index.md
+  - Mimari:
+      - Genel Bakış: docs/architecture/overview.md
+  - Yol Haritası:
+      - 2025 Q4: docs/roadmap/Q4.md
+  - Geliştirici Rehberi: docs/guides/development.md

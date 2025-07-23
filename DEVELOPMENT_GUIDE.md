@@ -42,55 +42,29 @@ Platformu geliştirmek için aşağıdaki araçların sisteminizde kurulu olmas�
 
 ---
 
-## 3. Servislerin Kurulumu ve Çalıştırılması
+## 3. Kodlama Standartları ve En İyi Pratikler
 
-Her servisin kendi dizininde, o servise özel talimatları izleyin.
+### a) Loglama
 
-### a) `core` Servisi (Go)
+Tüm servisler **yapılandırılmış (structured) JSON formatında** log üretmelidir. Bu, logların merkezi bir sistemde (Loki, Elasticsearch) kolayca taranmasını ve analiz edilmesini sağlar. Her log satırı en az şu alanları içermelidir:
 
-`core` servisi, platformun iş mantığı merkezidir.
+- `timestamp`: Olayın zamanı (ISO 8601 formatında).
+- `level`: Log seviyesi (`INFO`, `WARN`, `ERROR`, `DEBUG`).
+- `service`: Logu üreten servisin adı (örn: "signal", "core").
+- `trace_id`: Olayın ilişkili olduğu çağrının veya işlemin benzersiz kimliği.
+- `message`: Olayın açıklaması.
 
-1.  **Dizine Girin:**
-    ```bash
-    cd core/
-    ```
-2.  **Protobuf Kodlarını Oluşturun:**
-    `core`'un API tanımını Go koduna çevirin.
-    ```bash
-    protoc --go_out=. --go_opt=paths=source_relative \
-           --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-           proto/core.proto
-    ```
-3.  **Bağımlılıkları Yükleyin:**
-    ```bash
-    go mod tidy
-    ```
-4.  **Servisi Çalıştırın:**
-    ```bash
-    go run .
-    # Çıktı: Server started at [::]:50051
-    ```
+**Örnek Log Satırı (`signal` servisinden):**
+```json
+{"timestamp": "2023-10-16T10:00:01Z", "level": "INFO", "service": "signal", "trace_id": "uuid-abc-123", "message": "100 Trying gönderildi", "remote_addr": "194.48.95.2:5060"}
+```
 
-### b) `signal` Servisi (Rust)
+### b) İzlenebilirlik (Tracing)
 
-`signal` servisi, dış dünyadan gelen SIP trafiğini karşılar.
-
-1.  **Dizine Girin:**
-    ```bash
-    cd signal/
-    ```
-2.  **Derleme ve Çalıştırma:**
-    `cargo`, Protobuf derlemesi dahil tüm süreci otomatik olarak yönetir.
-    ```bash
-    cargo run
-    # Çıktı: SIP Sunucusu başlatıldı, dinleniyor: 0.0.0.0:5060
-    ```
-3.  **Sunucu Kurulumu Notu (Linux):**
-    `signal`'ı bir sunucuda çalıştırıyorsanız, güvenlik duvarından `5060/udp` portuna izin verdiğinizden emin olun.
-    ```bash
-    sudo ufw allow 5060/udp
-    sudo ufw reload
-    ```
+Platformumuz, dağıtık izleme (distributed tracing) prensibini benimser.
+1.  **`TraceID` Oluşturma:** Bir işlemi başlatan ilk Kenar Katmanı servisi (`signal`, `bridge`), eğer gelen istekte bir `TraceID` yoksa, yeni bir tane oluşturmakla yükümlüdür.
+2.  **`TraceID` Yayılımı:** Bu `TraceID`, sonraki tüm servisler arası gRPC çağrılarının **metadata** bölümünde taşınmalıdır.
+3.  **Loglama Entegrasyonu:** Her servis, aldığı `TraceID`'yi kendi ürettiği tüm log satırlarına dahil etmelidir.
 
 ---
 
